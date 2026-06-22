@@ -1,0 +1,90 @@
+    const fs = require('fs');
+    const { Matrix } = require('ml-matrix');
+    const { LogisticRegression } = require('ml-logistic-regression');
+    const csv = require('csv-parser'); // برای خواندن فایل CSV
+
+    const datasetPath = './dataset/dataset_diabetes/diabetic_data.csv'; // مسیر صحیح فایل CSV
+    const modelPath = './logisticRegressionModel.json'; // مسیر ذخیره مدل
+
+    const features = [
+        'time_in_hospital',
+        'num_lab_procedures',
+        'num_procedures',
+        'num_medications',
+        'number_outpatient',
+        'number_emergency',
+        'number_inpatient',
+        'number_diagnoses'
+    ];
+    const target = 'readmitted'; // ستون هدف
+
+    let data = [];
+
+    // خواندن و پردازش داده‌ها از فایل CSV
+    fs.createReadStream(datasetPath)
+        .pipe(csv())
+        .on('data', (row) => {
+            // فقط ردیف‌هایی که ستون هدف (readmitted) مقدار دارند را نگه می‌داریم
+            // و مقادیر ستون هدف را به 0 یا 1 تبدیل می‌کنیم
+            if (row[target] === 'NO' || row[target] === '1') { // فرض می‌کنیم 'NO' یا '1' یعنی بستری نشده
+                row[target] = 0;
+                data.push(row);
+            } else if (row[target] === 'YES' || row[target] === '2') { // فرض می‌کنیم 'YES' یا '2' یعنی بستری شده
+                row[target] = 1;
+                data.push(row);
+            }
+            // ردیف‌هایی که ستون هدف ندارند یا مقدار نامشخصی دارند، نادیده گرفته می‌شوند
+        })
+        .on('end', () => {
+            console.log(`Dataset loaded: ${data.length} records found.`);
+
+            // استخراج ویژگی‌ها و برچسب‌ها
+            const X_raw = data.map(row => features.map(feature => parseFloat(row[feature])));
+            const y = data.map(row => parseInt(row[target]));
+
+            // حذف ردیف‌هایی که مقادیر NaN در ویژگی‌ها دارند
+            const validIndices = [];
+            for (let i = 0; i < X_raw.length; i++) {
+                if (X_raw[i].every(val => !isNaN(val))) {
+                    validIndices.push(i);
+                } else {
+                    console.warn(`Skipping row ${i} due to NaN values in features.`);
+                }
+            }
+
+            const X = new Matrix(validIndices.map(i => X_raw[i]));
+            const y_filtered = y.filter((_, i) => validIndices.includes(i));
+
+
+            if (X.rows === 0) {
+                 console.error("No valid data found after filtering. Cannot train model.");
+                 return;
+            }
+
+            console.log(`Training model with ${X.rows} samples.`);
+
+            // آموزش مدل Logistic Regression
+            const model = new LogisticRegression(X, y_filtered, {
+                // تنظیمات مدل، مثلاً قدرت منظم‌سازی (regularization)
+                // مقدار C کوچک‌تر یعنی منظم‌سازی قوی‌تر
+                 'c': 1, // می‌توانید این مقدار را تغییر دهید
+                 'epsilon': 1e-5,
+                 'iterations': 1000,
+                 ' ново': true // Use newton's method
+            });
+            model.train();
+
+            // ذخیره مدل آموزش‌دیده در فایل JSON
+            const modelJson = model.toJSON();
+            try {
+                fs.writeFileSync(modelPath, JSON.stringify(modelJson, null, 2)); // null, 2 برای خوانایی بهتر JSON
+                console.log(`Model trained and saved successfully to ${modelPath}`);
+            } catch (error) {
+                console.error("Error saving model:", error);
+            }
+        })
+        .on('error', (error) => {
+            console.error("Error reading CSV file:", error);
+            console.error(`Please ensure the file exists at: ${datasetPath}`);
+        });
+
