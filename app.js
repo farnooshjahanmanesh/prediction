@@ -5,9 +5,6 @@ const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 10000; // استفاده از پورت محیطی یا 10000 به عنوان پیش‌فرض
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
 
 // Middleware for parsing request bodies
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -18,10 +15,6 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // --- Model Loading ---
 // __dirname refers to the directory where the current script (app.js) is located.
-// Assuming app.js is in /data-project/
-// '..' goes up one level to /Desktop/
-// Another '..' goes up another level to /farnooshjahanmanesh/
-// Then we specify the model file name.
 const modelPath = path.join(__dirname, "logisticRegressionModel.json");
 
 let modelData;
@@ -30,7 +23,7 @@ let featureNames, means, stds, weights, bias;
 try {
     if (!fs.existsSync(modelPath)) {
         console.error(`Model file not found at: ${modelPath}`);
-        console.error("Please ensure the model file 'logisticRegressionModel.json' exists in the correct parent directory.");
+        console.error("Please ensure the model file 'logisticRegressionModel.json' exists in the same directory as app.js.");
         console.error("Current __dirname is:", __dirname);
         process.exit(1); // Exit if the model file is not found
     }
@@ -150,6 +143,7 @@ app.post("/predict", (req, res) => {
 });
 
 // --- Start Server ---
+// Only one app.listen call is needed
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
