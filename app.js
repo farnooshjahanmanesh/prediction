@@ -4,7 +4,8 @@ const fs = require("fs");
 const path = require("path");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000; // استفاده از پورت محیطی یا 3000 به عنوان پیش‌فرض
+
 
 // Middleware for parsing request bodies
 app.use(bodyParser.urlencoded({ extended: true }));
