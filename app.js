@@ -4,8 +4,10 @@ const fs = require("fs");
 const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 3000; // استفاده از پورت محیطی یا 3000 به عنوان پیش‌فرض
-
+const PORT = process.env.PORT || 10000; // استفاده از پورت محیطی یا 10000 به عنوان پیش‌فرض
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
 
 // Middleware for parsing request bodies
 app.use(bodyParser.urlencoded({ extended: true }));
